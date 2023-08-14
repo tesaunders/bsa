@@ -1,14 +1,8 @@
----
-title: "BSA"
-author: "Tom Saunders"
-format: gfm
-knitr:
-  opts_chunk:
-    fig.path: figs/
----
+BSA
+================
+Tom Saunders
 
-```{r}
-#| message: false
+``` r
 library(readxl)
 library(lubridate)
 library(readr)
@@ -16,17 +10,25 @@ library(dplyr)
 library(stringr)
 ```
 
-Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
+Read in two datasets: the first is for complaints made under the
+previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for
+complaints made under the current Codebook (1 July 2022 to present).
 
-```{r}
+``` r
 bsa_prev <- read_excel("data/20230810 AllClosedFormalComplaints.xlsx")
 bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
 ```
 
-Convert `Broadcast Date/Time` to date in each dataset. I can't find a way to preserve times.
+Convert `Broadcast Date/Time` to date in each dataset. I can’t find a
+way to preserve times.
 
-```{r}
+``` r
 bsa_prev$`Broadcast Date/Time` <- as.numeric(bsa_prev$`Broadcast Date/Time`)
+```
+
+    Warning: NAs introduced by coercion
+
+``` r
 bsa_prev$`Broadcast Date/Time` <- as.Date(bsa_prev$`Broadcast Date/Time`, origin = "1899-12-30")
 
 bsa_curr$`Broadcast Date/Time` <- as.Date(bsa_curr$`Broadcast Date/Time`, origin = "1899-12-30")
@@ -34,14 +36,13 @@ bsa_curr$`Broadcast Date/Time` <- as.Date(bsa_curr$`Broadcast Date/Time`, origin
 
 Join the two datasets.
 
-```{r}
-#| message: false
+``` r
 bsa_full <- full_join(bsa_prev, bsa_curr)
 ```
 
 Rename columns.
 
-```{r}
+``` r
 colnames(bsa_full) <- c("broadcaster", "complaint", "programme", "broadcast_date", "genre",
                         "code", "determination", "decision_date", "majority", "split", 
                         "elect_standards", "elect_notupheld", "elect_upheld", 
@@ -50,10 +51,11 @@ colnames(bsa_full) <- c("broadcaster", "complaint", "programme", "broadcast_date
                         "radio_upheld", "standards", "not_upheld", "upheld", "tv_radio")
 ```
 
-Consolidate individual standards based on previous codebook into 'standards' column introduced for new codebook. Repeat for 'upheld' and 'not upheld' standards. Drop these columns once they are consolidated.
+Consolidate individual standards based on previous codebook into
+‘standards’ column introduced for new codebook. Repeat for ‘upheld’ and
+‘not upheld’ standards. Drop these columns once they are consolidated.
 
-```{r}
-
+``` r
 bsa_full$standards <- coalesce(bsa_full$elect_standards, bsa_full$fta_standards, bsa_full$paytv_standards, bsa_full$radio_standards, bsa_full$standards)
   
 bsa_full$not_upheld <- coalesce(bsa_full$elect_notupheld, bsa_full$fta_notupheld, bsa_full$paytv_notupheld, bsa_full$radio_notupheld, bsa_full$not_upheld)
@@ -65,7 +67,7 @@ bsa_full <- select(bsa_full, -c(11:22))
 
 Fix factors.WIP.
 
-```{r}
+``` r
 # Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
 bsa_full$broadcaster <- recode(bsa_full$broadcaster, "Newstalk ZB" = "NZME Radio Ltd")
 
@@ -102,13 +104,4 @@ bsa_full$upheld <- str_trim(bsa_full$upheld, "left")
 bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 
 # standards/not_upheld/upheld - separate standards out, simplify their names, pivot wider to have standard name as column, have upheld or not upheld as value
-
-
-
-
-
-
 ```
-
-
-
