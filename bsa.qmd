@@ -14,6 +14,7 @@ library(lubridate)
 library(readr)
 library(dplyr)
 library(stringr)
+library(tidyr)
 ```
 
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
@@ -101,10 +102,22 @@ bsa_full$standards <- str_trim(bsa_full$standards, "left")
 bsa_full$upheld <- str_trim(bsa_full$upheld, "left")
 bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 
-# standards/not_upheld/upheld - separate standards out, simplify their names, pivot wider to have standard name as column, have upheld or not upheld as value
+# Sort out standards/upheld/not_upheld columns
 
+## first find rows where upheld and not_upheld both are NA
+bsa_test <- bsa_full
 
+missing <- bsa_test |> 
+  filter(is.na(upheld) & is.na(not_upheld))
 
+## check BSA web database to understand these examples
+
+# When ready: Get the data in long format (pivot_longer), split comma separated values in separate rows (separate_longer_delim) and get data in wide format (pivot_wider).
+# tmp <- bsa_test |> 
+#   select(complaint, upheld, not_upheld) |> 
+#   pivot_longer(cols = -complaint, values_drop_na = TRUE) |> 
+#   separate_longer_delim(value, ",") |> 
+#   pivot_wider(names_from = value, values_from = name)
 
 
 
