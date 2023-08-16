@@ -101,12 +101,38 @@ bsa_full$standards <- str_trim(bsa_full$standards, "left")
 bsa_full$upheld <- str_trim(bsa_full$upheld, "left")
 bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 
-# standards/not_upheld/upheld - separate standards out, simplify their names, pivot wider to have standard name as column, have upheld or not upheld as value
+# Fix missing values in standards/upheld/not_upheld columns
 
+## Find rows where standards are missing from both 'upheld' and 'not_upheld" columns.
 
+missing <- bsa_full |> 
+  filter(is.na(upheld) & is.na(not_upheld))
 
+## Add missing values to standards column based on manual BSA decision database lookup
 
+missing[1,10] <- "Discrimination and Denigration"
+missing[4, 10] <- "Accuracy" # Complaint 2018-020 
+missing[5,10] <- "Balance,Accuracy" # Complaint 2019-006
+missing[5,4] <- as.Date("2018-12-17")
 
+## Use case_when to fill in missing values in not_upheld and upheld columns.
+
+missing <- missing |>
+  mutate(
+    not_upheld = case_when(determination %in% c("Not Upheld", "Declined to Determine 11a", "Declined to Determine 11b") ~ standards,
+                           complaint == "2017-101C" ~ "Children's Interests",
+                           complaint == "2017-101D" ~ "Children's Interests",
+                           complaint == "2019-019B" ~ "Privacy"),
+    upheld = case_when(complaint == "2019-019B" ~ "Fairness",
+                       complaint == "2017-101C" ~ "Good Taste and Decency",
+                       complaint == "2017-101D" ~ "Good Taste and Decency")
+  )
+  
+## Merge missing dataframe back into bsa_full
+
+bsa_full <- bsa_full |>
+  filter(!is.na(upheld) | !is.na(not_upheld)) |> 
+  bind_rows(missing)
 
 ```
 
