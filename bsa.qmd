@@ -15,6 +15,7 @@ library(readr)
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(ggplot2)
 ```
 
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
@@ -27,6 +28,7 @@ bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
 Convert `Broadcast Date/Time` to date in each dataset. I can't find a way to preserve times.
 
 ```{r}
+#| warning: false
 bsa_prev$`Broadcast Date/Time` <- as.numeric(bsa_prev$`Broadcast Date/Time`)
 bsa_prev$`Broadcast Date/Time` <- as.Date(bsa_prev$`Broadcast Date/Time`, origin = "1899-12-30")
 
@@ -204,9 +206,68 @@ bsa_full <- bsa_full[, c(1,3,5,4,2,14,13,6,7:12)]
 Swap standards to column names and not_upheld/upheld to values for each complaint.
 
 ```{r}
+#| warning: false
 bsa_full <- bsa_full |>
   pivot_longer(cols = c(upheld, not_upheld), values_drop_na = TRUE) |> 
   separate_longer_delim(value, ",") |> 
   pivot_wider(names_from = value, values_from = name)
+```
+
+Rename standard columns.
+
+```{r}
+bsa_full <- bsa_full |> 
+  rename(
+    std_privacy = 13,
+    std_decency = 14,
+    std_discrim = 15,
+    std_controv = 16,
+    std_accuracy = 17,
+    std_fairness = 18,
+    std_children = 19,
+    std_violence = 20,
+    std_law = 21,
+    std_balance = 22,
+    std_alcohol = 23,
+    std_info = 24,
+    std_mislead = 25,
+    std_advocacy = 26,
+    std_election = 27,
+    std_offensive = 28,
+    std_illegal = 29
+  )
+```
+
+Remove NULL values.
+
+```{r}
+bsa_full <- bsa_full |>
+  mutate(across(13:29, as.character))
+```
+
+Summaries.
+
+```{r}
+# Frequency of majority by determination
+
+bsa_full |> 
+  group_by(determination, majority) |> 
+  summarise(n = n()) |> 
+  mutate(freq = n / sum(n))
+
+# Proportion of determination by year
+
+year_det <- bsa_full |> 
+  filter(determination %in% c("Not Upheld", "Upheld")) |> 
+  group_by(complaint_year, determination) |> 
+  summarise(n = n()) |>
+  mutate(freq = n / sum(n))
+
+ggplot(year_det, aes(complaint_year, freq, group = determination)) +
+  geom_line() +
+  theme_classic()
+
+dir.create("figs")
+ggsave("figs/det-over-time.png")
 ```
 

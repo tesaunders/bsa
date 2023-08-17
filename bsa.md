@@ -9,6 +9,7 @@ library(readr)
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(ggplot2)
 ```
 
 Read in two datasets: the first is for complaints made under the
@@ -25,11 +26,6 @@ way to preserve times.
 
 ``` r
 bsa_prev$`Broadcast Date/Time` <- as.numeric(bsa_prev$`Broadcast Date/Time`)
-```
-
-    Warning: NAs introduced by coercion
-
-``` r
 bsa_prev$`Broadcast Date/Time` <- as.Date(bsa_prev$`Broadcast Date/Time`, origin = "1899-12-30")
 
 bsa_curr$`Broadcast Date/Time` <- as.Date(bsa_curr$`Broadcast Date/Time`, origin = "1899-12-30")
@@ -213,13 +209,93 @@ bsa_full <- bsa_full |>
   pivot_wider(names_from = value, values_from = name)
 ```
 
-    Warning: Values from `name` are not uniquely identified; output will contain list-cols.
-    • Use `values_fn = list` to suppress this warning.
-    • Use `values_fn = {summary_fun}` to summarise duplicates.
-    • Use the following dplyr code to identify duplicates.
-      {data} %>%
-      dplyr::group_by(broadcaster, programme, genre, broadcast_date, complaint,
-      complaint_year, tv_radio, determination, decision_date, majority, split,
-      standards, value) %>%
-      dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-      dplyr::filter(n > 1L)
+Rename standard columns.
+
+``` r
+bsa_full <- bsa_full |> 
+  rename(
+    std_privacy = 13,
+    std_decency = 14,
+    std_discrim = 15,
+    std_controv = 16,
+    std_accuracy = 17,
+    std_fairness = 18,
+    std_children = 19,
+    std_violence = 20,
+    std_law = 21,
+    std_balance = 22,
+    std_alcohol = 23,
+    std_info = 24,
+    std_mislead = 25,
+    std_advocacy = 26,
+    std_election = 27,
+    std_offensive = 28,
+    std_illegal = 29
+  )
+```
+
+Remove NULL values.
+
+``` r
+bsa_full <- bsa_full |>
+  mutate(across(13:29, as.character))
+```
+
+Summaries.
+
+``` r
+# Frequency of majority by determination
+
+bsa_full |> 
+  group_by(determination, majority) |> 
+  summarise(n = n()) |> 
+  mutate(freq = n / sum(n))
+```
+
+    `summarise()` has grouped output by 'determination'. You can override using the
+    `.groups` argument.
+
+    # A tibble: 7 × 4
+    # Groups:   determination [4]
+      determination             majority     n   freq
+      <chr>                     <chr>    <int>  <dbl>
+    1 Declined to Determine 11a No          25 0.926 
+    2 Declined to Determine 11a Yes          2 0.0741
+    3 Declined to Determine 11b No          43 1     
+    4 Not Upheld                No         767 0.938 
+    5 Not Upheld                Yes         51 0.0623
+    6 Upheld                    No         128 0.962 
+    7 Upheld                    Yes          5 0.0376
+
+``` r
+# Proportion of determination by year
+
+year_det <- bsa_full |> 
+  filter(determination %in% c("Not Upheld", "Upheld")) |> 
+  group_by(complaint_year, determination) |> 
+  summarise(n = n()) |>
+  mutate(freq = n / sum(n))
+```
+
+    `summarise()` has grouped output by 'complaint_year'. You can override using
+    the `.groups` argument.
+
+``` r
+ggplot(year_det, aes(complaint_year, freq, group = determination)) +
+  geom_line() +
+  theme_classic()
+```
+
+![](figs/unnamed-chunk-13-1.png)
+
+``` r
+dir.create("figs")
+```
+
+    Warning in dir.create("figs"): 'figs' already exists
+
+``` r
+ggsave("figs/det-over-time.png")
+```
+
+    Saving 7 x 5 in image
