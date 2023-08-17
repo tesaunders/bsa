@@ -8,6 +8,7 @@ library(lubridate)
 library(readr)
 library(dplyr)
 library(stringr)
+library(tidyr)
 ```
 
 Read in two datasets: the first is for complaints made under the
@@ -110,7 +111,7 @@ bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 missing <- bsa_full |> 
   filter(is.na(upheld) & is.na(not_upheld))
 
-## Add missing values to standards column based on manual BSA decision database lookup
+## Add missing values based on manual BSA decision database lookup
 
 missing[1,10] <- "Discrimination and Denigration"
 missing[4, 10] <- "Accuracy" # Complaint 2018-020 
@@ -129,10 +130,40 @@ missing <- missing |>
                        complaint == "2017-101C" ~ "Good Taste and Decency",
                        complaint == "2017-101D" ~ "Good Taste and Decency")
   )
-  
+
 ## Merge missing dataframe back into bsa_full
 
 bsa_full <- bsa_full |>
   filter(!is.na(upheld) | !is.na(not_upheld)) |> 
   bind_rows(missing)
+
+## Find empty 'standards' values
+
+missing2 <- bsa_full |> 
+  filter(is.na(standards))
+
+## Use case_when to fill in missing values in 'standards' columns.
+
+missing2 <- missing2 |> 
+  mutate(
+    standards = case_when(determination == "Not Upheld" ~ not_upheld,
+                          determination == "Upheld" ~ upheld)
+  )
+  
+bsa_full <- bsa_full |>
+  filter(!is.na(standards)) |> 
+  bind_rows(missing2)
+```
+
+Create new variable ‘complaint_year’ based on first 4 characters of
+‘complaint’.
+
+``` r
+bsa_full$complaint_year <- substr(bsa_full$complaint, 1, 4)
+```
+
+Reorder columns.
+
+``` r
+bsa_full <- bsa_full[, c(1,3,5,4,2,14,13,6,7:12)]
 ```
