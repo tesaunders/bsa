@@ -70,16 +70,49 @@ Fix factors.WIP.
 
 ``` r
 # Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
+
 bsa_full$broadcaster <- recode(bsa_full$broadcaster, "Newstalk ZB" = "NZME Radio Ltd")
 
 # Recode 'complaint' numbers as what they have been renumbered to
+
 bsa_full$complaint <- recode(bsa_full$complaint, 
                              "2016-053 (renumbered 048B)" = "2016-048B",
                              "2017-027 (renumbered 018B)" = "2017-018B",
                              "2017-028 (renumbered 018C)" = "2017-018C",
                              "2017-029 (renumbered 018D)" = "2017-018D")
 
-# programme: Need to figure out how to use regex
+# Recode programme to remove duplicates with minor spelling variations and date variations
+
+bsa_full <- bsa_full |>
+  mutate(
+    programme = case_when((substr(programme, 1, 6)) %in% c("1 News", "1 NEWS", "One News", "ONE News") ~ "1 News",
+                              (substr(programme, 1, 3)) == "Ban" ~ "Ban 1080 Election Programme",
+                              (substr(programme, 1, 4)) == "Bhak" ~ "Bhakhde Masley",
+                              (substr(programme, 1, 8)) == "Box Seat" ~ "Box Seat",
+                              (substr(programme, 1, 9)) %in% c("Breakfast", "TV1 Break") ~ "Breakfast",
+                              (substr(programme, 1, 19)) == "Canterbury Mornings" ~ "Canterbury Mornings",
+                              (substr(programme, 1, 5)) == "Dasam" ~ "Dasam Granth da Sach",
+                              (substr(programme, 1, 13)) == "Early Edition" ~ "Early Edition",
+                              (substr(programme, 1, 21)) == "Entertainment Tonight" ~ "Entertainment Tonight",
+                              (substr(programme, 1, 7)) == "Fair Go" ~ "Fair Go",
+                              (substr(programme, 1, 17)) == "Hauraki Breakfast" ~ "Hauraki Breakfast",
+                              (substr(programme, 1, 13)) == "Have You Been" ~ "Have You Been Paying Attention",
+                              (substr(programme, 1, 14)) == "Inside the Red" ~ "Inside the Red Arrows",
+                              (substr(programme, 1, 5)) == "Magic" ~ "Magic Afternoons",
+                              (substr(programme, 1, 14)) == "Morning Report" ~ "Morning Report",
+                              (substr(programme, 1, 16)) == "Naked Attraction" ~ "Naked Attraction",
+                              (substr(programme, 1, 6)) %in% c("Newshu", "Newhub") ~ "Newshub",
+                              (substr(programme, 1, 12)) == "Nine To Noon" ~ "Nine To Noon",
+                              (substr(programme, 1, 14)) == "Overnight Talk" ~ "Overnight Talk",
+                              (substr(programme, 1, 14)) %in% c("Q+A", "Q +") ~ "Q+A",
+                              (substr(programme, 1, 8)) == "RNZ News" ~ "RNZ News",
+                              (substr(programme, 1, 11)) == "Seven Sharp" ~ "Seven Sharp",
+                              (substr(programme, 1, 16)) == "Shortland Street" ~ "Shortland Street",
+                              (substr(programme, 1, 11)) == "The AM Show" ~ "The AM Show",
+                              (substr(programme, 1, 12)) == "The Windsors" ~ "The Windsors",
+                              .default = programme,
+                              )
+  )
 
 # Recode 'code' as 'either 'Television' or 'Radio', move to 'tv_radio' column to align with new codebook, then delete 'code' column.
 
@@ -93,6 +126,7 @@ bsa_full$tv_radio <- coalesce(bsa_full$code, bsa_full$tv_radio)
 bsa_full <- select(bsa_full, -code)
 
 # Remove asterisk and whitespace from columns containing them.
+
 bsa_full <- bsa_full |> 
   mutate(
     standards = gsub("\\*", "", standards),
@@ -105,7 +139,6 @@ bsa_full$upheld <- str_trim(bsa_full$upheld, "left")
 bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 
 # Fix missing values in standards/upheld/not_upheld columns
-
 ## Find rows where standards are missing from both 'upheld' and 'not_upheld" columns.
 
 missing <- bsa_full |> 
@@ -149,7 +182,9 @@ missing2 <- missing2 |>
     standards = case_when(determination == "Not Upheld" ~ not_upheld,
                           determination == "Upheld" ~ upheld)
   )
-  
+
+## Merge missing standards dataframe back into bsa_full
+ 
 bsa_full <- bsa_full |>
   filter(!is.na(standards)) |> 
   bind_rows(missing2)
@@ -167,3 +202,24 @@ Reorder columns.
 ``` r
 bsa_full <- bsa_full[, c(1,3,5,4,2,14,13,6,7:12)]
 ```
+
+Swap standards to column names and not_upheld/upheld to values for each
+complaint.
+
+``` r
+bsa_full <- bsa_full |>
+  pivot_longer(cols = c(upheld, not_upheld), values_drop_na = TRUE) |> 
+  separate_longer_delim(value, ",") |> 
+  pivot_wider(names_from = value, values_from = name)
+```
+
+    Warning: Values from `name` are not uniquely identified; output will contain list-cols.
+    • Use `values_fn = list` to suppress this warning.
+    • Use `values_fn = {summary_fun}` to summarise duplicates.
+    • Use the following dplyr code to identify duplicates.
+      {data} %>%
+      dplyr::group_by(broadcaster, programme, genre, broadcast_date, complaint,
+      complaint_year, tv_radio, determination, decision_date, majority, split,
+      standards, value) %>%
+      dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+      dplyr::filter(n > 1L)
