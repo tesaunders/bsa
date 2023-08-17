@@ -14,6 +14,7 @@ library(lubridate)
 library(readr)
 library(dplyr)
 library(stringr)
+library(tidyr)
 ```
 
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
