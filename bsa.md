@@ -10,6 +10,7 @@ library(dplyr)
 library(stringr)
 library(tidyr)
 library(ggplot2)
+library(scales)
 ```
 
 Read in two datasets: the first is for complaints made under the
@@ -274,7 +275,8 @@ year_det <- bsa_full |>
   filter(determination %in% c("Not Upheld", "Upheld")) |> 
   group_by(complaint_year, determination) |> 
   summarise(n = n()) |>
-  mutate(freq = n / sum(n))
+  mutate(freq = n / sum(n)) |> 
+  filter(determination == "Upheld")
 ```
 
     `summarise()` has grouped output by 'complaint_year'. You can override using
@@ -283,19 +285,11 @@ year_det <- bsa_full |>
 ``` r
 ggplot(year_det, aes(complaint_year, freq, group = determination)) +
   geom_line() +
-  theme_classic()
+  theme_classic() +
+  labs(title = "Proportion of 'upheld' complaints over time") +
+  xlab("Year") +
+  ylab("") +
+  scale_y_continuous(labels = scales::percent)
 ```
 
-![](figs/unnamed-chunk-13-1.png)
-
-``` r
-dir.create("figs")
-```
-
-    Warning in dir.create("figs"): 'figs' already exists
-
-``` r
-ggsave("figs/det-over-time.png")
-```
-
-    Saving 7 x 5 in image
+![](figs/upheld-over-time-1.png)

@@ -16,6 +16,7 @@ library(dplyr)
 library(stringr)
 library(tidyr)
 library(ggplot2)
+library(scales)
 ```
 
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
@@ -248,6 +249,7 @@ bsa_full <- bsa_full |>
 Summaries.
 
 ```{r}
+#| label: upheld-over-time
 # Frequency of majority by determination
 
 bsa_full |> 
@@ -261,13 +263,15 @@ year_det <- bsa_full |>
   filter(determination %in% c("Not Upheld", "Upheld")) |> 
   group_by(complaint_year, determination) |> 
   summarise(n = n()) |>
-  mutate(freq = n / sum(n))
+  mutate(freq = n / sum(n)) |> 
+  filter(determination == "Upheld")
 
 ggplot(year_det, aes(complaint_year, freq, group = determination)) +
   geom_line() +
-  theme_classic()
-
-dir.create("figs")
-ggsave("figs/det-over-time.png")
+  theme_classic() +
+  labs(title = "Proportion of 'upheld' complaints over time") +
+  xlab("Year") +
+  ylab("") +
+  scale_y_continuous(labels = scales::percent)
 ```
 
