@@ -11,6 +11,7 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 library(scales)
+library(forcats)
 ```
 
 Read in two datasets: the first is for complaints made under the
@@ -240,6 +241,9 @@ Remove NULL values.
 ``` r
 bsa_full <- bsa_full |>
   mutate(across(13:29, as.character))
+
+# Fix instance of both values being added 
+bsa_full[65,17] <- "not_upheld"
 ```
 
 Summaries.
@@ -293,3 +297,29 @@ ggplot(year_det, aes(complaint_year, freq, group = determination)) +
 ```
 
 ![](figs/upheld-over-time-1.png)
+
+``` r
+# Count upheld vs not_upheld standards
+summary2 <- bsa_full |>
+  select(13:29) |>
+  pivot_longer(cols = everything()) |> 
+  count(name,value) %>%
+  filter(value != "NULL") |> 
+  pivot_wider(names_from = value,values_from = n) |> 
+  group_by(name) |>
+  mutate(
+    total = sum(upheld, na.rm = TRUE) + sum(not_upheld, na.rm = TRUE),
+    upheld_pc = sum(upheld, na.rm = TRUE) / total,
+  ) 
+
+ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  scale_y_continuous(labels = scales::percent) +
+  xlab("") +
+  ylab("") +
+  labs(title = "Proportion of complaints upheld by standard")
+```
+
+![](figs/upheld-by-standard-1.png)
