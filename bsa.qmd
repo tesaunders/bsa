@@ -68,7 +68,7 @@ bsa_full$upheld <- coalesce(bsa_full$elect_upheld, bsa_full$fta_upheld, bsa_full
 bsa_full <- select(bsa_full, -c(11:22))
 ```
 
-Fix factors.WIP.
+Fix factors.
 
 ```{r}
 # Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
