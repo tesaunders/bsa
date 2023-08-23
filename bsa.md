@@ -12,6 +12,7 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(forcats)
+library(Manu)
 ```
 
 Read in two datasets: the first is for complaints made under the
@@ -64,7 +65,7 @@ bsa_full$upheld <- coalesce(bsa_full$elect_upheld, bsa_full$fta_upheld, bsa_full
 bsa_full <- select(bsa_full, -c(11:22))
 ```
 
-Fix factors.WIP.
+Fix factors.
 
 ``` r
 # Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
@@ -246,60 +247,22 @@ bsa_full <- bsa_full |>
 bsa_full[65,17] <- "not_upheld"
 ```
 
-Summaries.
+Plots
 
 ``` r
-# Frequency of majority by determination
-
-bsa_full |> 
-  group_by(determination, majority) |> 
-  summarise(n = n()) |> 
-  mutate(freq = n / sum(n))
-```
-
-    `summarise()` has grouped output by 'determination'. You can override using the
-    `.groups` argument.
-
-    # A tibble: 7 × 4
-    # Groups:   determination [4]
-      determination             majority     n   freq
-      <chr>                     <chr>    <int>  <dbl>
-    1 Declined to Determine 11a No          25 0.926 
-    2 Declined to Determine 11a Yes          2 0.0741
-    3 Declined to Determine 11b No          43 1     
-    4 Not Upheld                No         767 0.938 
-    5 Not Upheld                Yes         51 0.0623
-    6 Upheld                    No         128 0.962 
-    7 Upheld                    Yes          5 0.0376
-
-``` r
-# Proportion of determination by year
-
-year_det <- bsa_full |> 
-  filter(determination %in% c("Not Upheld", "Upheld")) |> 
-  group_by(complaint_year, determination) |> 
-  summarise(n = n()) |>
-  mutate(freq = n / sum(n)) |> 
-  filter(determination == "Upheld")
-```
-
-    `summarise()` has grouped output by 'complaint_year'. You can override using
-    the `.groups` argument.
-
-``` r
-ggplot(year_det, aes(complaint_year, freq, group = determination)) +
-  geom_line() +
+ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
+  geom_bar(position = "fill", colour = "black") +
   theme_classic() +
-  labs(title = "Proportion of 'upheld' complaints over time") +
-  xlab("Year") +
+  scale_fill_manual(values = get_pal("Kaka")) +
+  labs(title = "Determination of BSA complaints over time") +
+  xlab("") +
   ylab("") +
   scale_y_continuous(labels = scales::percent)
 ```
 
-![](figs/upheld-over-time-1.png)
+![](figs/determination-over-time-1.png)
 
 ``` r
-# Count upheld vs not_upheld standards
 summary2 <- bsa_full |>
   select(13:29) |>
   pivot_longer(cols = everything()) |> 
@@ -312,14 +275,19 @@ summary2 <- bsa_full |>
     upheld_pc = sum(upheld, na.rm = TRUE) / total,
   ) 
 
-ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc)) +
+ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = factor(upheld_pc))) +
   geom_col() +
   coord_flip() +
   theme_classic() +
+  scale_fill_manual(values = rep("#A7473A", 15)) +
   scale_y_continuous(labels = scales::percent) +
   xlab("") +
   ylab("") +
-  labs(title = "Proportion of complaints upheld by standard")
+  labs(title = "Proportion of complaints upheld by standard") +
+  guides(fill=FALSE)
 ```
+
+    Warning: The `<scale>` argument of `guides()` cannot be `FALSE`. Use "none" instead as
+    of ggplot2 3.3.4.
 
 ![](figs/upheld-by-standard-1.png)

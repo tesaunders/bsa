@@ -18,6 +18,7 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(forcats)
+library(Manu)
 ```
 
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
@@ -250,38 +251,22 @@ bsa_full <- bsa_full |>
 bsa_full[65,17] <- "not_upheld"
 ```
 
-Summaries.
+Plots
 
 ```{r}
-#| label: upheld-over-time
-# Frequency of majority by determination
-
-bsa_full |> 
-  group_by(determination, majority) |> 
-  summarise(n = n()) |> 
-  mutate(freq = n / sum(n))
-
-# Proportion of determination by year
-
-year_det <- bsa_full |> 
-  filter(determination %in% c("Not Upheld", "Upheld")) |> 
-  group_by(complaint_year, determination) |> 
-  summarise(n = n()) |>
-  mutate(freq = n / sum(n)) |> 
-  filter(determination == "Upheld")
-
-ggplot(year_det, aes(complaint_year, freq, group = determination)) +
-  geom_line() +
+#| label: determination-over-time
+ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
+  geom_bar(position = "fill", colour = "black") +
   theme_classic() +
-  labs(title = "Proportion of 'upheld' complaints over time") +
-  xlab("Year") +
+  scale_fill_manual(values = get_pal("Kaka")) +
+  labs(title = "Determination of BSA complaints over time") +
+  xlab("") +
   ylab("") +
   scale_y_continuous(labels = scales::percent)
 ```
 
 ```{r}
 #| label: upheld-by-standard
-# Count upheld vs not_upheld standards
 summary2 <- bsa_full |>
   select(13:29) |>
   pivot_longer(cols = everything()) |> 
@@ -294,13 +279,15 @@ summary2 <- bsa_full |>
     upheld_pc = sum(upheld, na.rm = TRUE) / total,
   ) 
 
-ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc)) +
+ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = factor(upheld_pc))) +
   geom_col() +
   coord_flip() +
   theme_classic() +
+  scale_fill_manual(values = rep("#A7473A", 15)) +
   scale_y_continuous(labels = scales::percent) +
   xlab("") +
   ylab("") +
-  labs(title = "Proportion of complaints upheld by standard")
+  labs(title = "Proportion of complaints upheld by standard") +
+  guides(fill=FALSE)
 ```
 
