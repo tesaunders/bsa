@@ -84,35 +84,39 @@ bsa_full$complaint <- recode(bsa_full$complaint,
 
 bsa_full <- bsa_full |>
   mutate(
-    programme = case_when((substr(programme, 1, 6)) %in% c("1 News", "1 NEWS", "One News", "ONE News") ~ "1 News",
-                              (substr(programme, 1, 3)) == "Ban" ~ "Ban 1080 Election Programme",
-                              (substr(programme, 1, 4)) == "Bhak" ~ "Bhakhde Masley",
-                              (substr(programme, 1, 8)) == "Box Seat" ~ "Box Seat",
-                              (substr(programme, 1, 9)) %in% c("Breakfast", "TV1 Break") ~ "Breakfast",
-                              (substr(programme, 1, 19)) == "Canterbury Mornings" ~ "Canterbury Mornings",
-                              (substr(programme, 1, 5)) == "Dasam" ~ "Dasam Granth da Sach",
-                              (substr(programme, 1, 13)) == "Early Edition" ~ "Early Edition",
-                              (substr(programme, 1, 21)) == "Entertainment Tonight" ~ "Entertainment Tonight",
-                              (substr(programme, 1, 7)) == "Fair Go" ~ "Fair Go",
-                              (substr(programme, 1, 17)) == "Hauraki Breakfast" ~ "Hauraki Breakfast",
-                              (substr(programme, 1, 13)) == "Have You Been" ~ "Have You Been Paying Attention",
-                              (substr(programme, 1, 14)) == "Inside the Red" ~ "Inside the Red Arrows",
-                              (substr(programme, 1, 5)) == "Magic" ~ "Magic Afternoons",
-                              (substr(programme, 1, 14)) == "Morning Report" ~ "Morning Report",
-                              (substr(programme, 1, 16)) == "Naked Attraction" ~ "Naked Attraction",
-                              (substr(programme, 1, 6)) %in% c("Newshu", "Newhub") ~ "Newshub",
-                              (substr(programme, 1, 12)) == "Nine To Noon" ~ "Nine To Noon",
-                              (substr(programme, 1, 14)) == "Overnight Talk" ~ "Overnight Talk",
-                              (substr(programme, 1, 14)) %in% c("Q+A", "Q +") ~ "Q+A",
-                              (substr(programme, 1, 8)) == "RNZ News" ~ "RNZ News",
-                              (substr(programme, 1, 11)) == "Seven Sharp" ~ "Seven Sharp",
-                              (substr(programme, 1, 16)) == "Shortland Street" ~ "Shortland Street",
-                              (substr(programme, 1, 11)) == "The AM Show" ~ "The AM Show",
-                              (substr(programme, 1, 12)) == "The Windsors" ~ "The Windsors",
-                              .default = programme,
-                              )
+    programme = case_when((substr(programme, 1, 6)) %in% c("1 News", "1 NEWS") ~ "1 News",
+                          (substr(programme, 1, 8)) %in% c("One News", "ONE News") ~ "1 News",
+                          (substr(programme, 1, 3)) == "Ban" ~ "Ban 1080 Election Programme",
+                          (substr(programme, 1, 4)) == "Bhak" ~ "Bhakhde Masley",
+                          (substr(programme, 1, 8)) == "Box Seat" ~ "Box Seat",
+                          (substr(programme, 1, 9)) %in% c("Breakfast", "TV1 Break") ~ "Breakfast",
+                          (substr(programme, 1, 19)) == "Canterbury Mornings" ~ "Canterbury Mornings",
+                          (substr(programme, 1, 5)) == "Dasam" ~ "Dasam Granth da Sach",
+                          (substr(programme, 1, 13)) == "Early Edition" ~ "Early Edition",
+                          (substr(programme, 1, 21)) == "Entertainment Tonight" ~ "Entertainment Tonight",
+                          (substr(programme, 1, 7)) == "Fair Go" ~ "Fair Go",
+                          (substr(programme, 1, 17)) == "Hauraki Breakfast" ~ "Hauraki Breakfast",
+                          (substr(programme, 1, 13)) == "Have You Been" ~ "Have You Been Paying Attention",
+                          (substr(programme, 1, 14)) == "Inside the Red" ~ "Inside the Red Arrows",
+                          (substr(programme, 1, 5)) == "Magic" ~ "Magic Afternoons",
+                          (substr(programme, 1, 14)) == "Morning Report" ~ "Morning Report",
+                          (substr(programme, 1, 16)) == "Naked Attraction" ~ "Naked Attraction",
+                          (substr(programme, 1, 6)) %in% c("Newshu", "Newhub") ~ "Newshub",
+                          (substr(programme, 1, 12)) == "Nine To Noon" ~ "Nine To Noon",
+                          (substr(programme, 1, 14)) == "Overnight Talk" ~ "Overnight Talk",
+                          (substr(programme, 1, 14)) %in% c("Q+A", "Q +") ~ "Q+A",
+                          (substr(programme, 1, 8)) == "RNZ News" ~ "RNZ News",
+                          (substr(programme, 1, 11)) == "Seven Sharp" ~ "Seven Sharp",
+                          (substr(programme, 1, 16)) == "Shortland Street" ~ "Shortland Street",
+                          (substr(programme, 1, 11)) == "The AM Show" ~ "The AM Show",
+                          (substr(programme, 1, 12)) == "The Windsors" ~ "The Windsors",
+                          .default = programme),
+    genre = case_when((programme == "Morning Report" ~ "News and Current Affairs"),
+                      .default = genre)
   )
+```
 
+``` r
 # Recode 'code' as 'either 'Television' or 'Radio', move to 'tv_radio' column to align with new codebook, then delete 'code' column.
 
 bsa_full$code <- recode(bsa_full$code, 
@@ -283,11 +287,88 @@ ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = fac
   scale_y_continuous(labels = scales::percent) +
   xlab("") +
   ylab("") +
-  labs(title = "Proportion of complaints upheld by standard") +
-  guides(fill=FALSE)
+  labs(title = "Proportion of standards upheld",
+       caption = "Complaints can refer to multiple standards, and particular standards can be upheld or not upheld.") +
+  guides(fill=FALSE) +
+  geom_text(aes(label = total), position = position_dodge(0))
 ```
 
     Warning: The `<scale>` argument of `guides()` cannot be `FALSE`. Use "none" instead as
     of ggplot2 3.3.4.
 
 ![](figs/upheld-by-standard-1.png)
+
+``` r
+ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = factor(upheld_pc))) +
+  geom_col() +
+  geom_text(data = summary2, 
+            mapping = aes(y = -0.07, 
+                          x = name, 
+                          label = total), 
+            hjust = 0, nudge_x = 0) +
+  coord_flip() +
+  theme_classic() +
+  scale_fill_manual(values = rep("#A7473A", 15)) +
+  scale_y_continuous(labels = scales::percent) +
+  xlab("") +
+  ylab("") +
+  theme(plot.caption = element_text(hjust = 0)) +
+  labs(title = "Proportion of standards upheld",
+       caption = "Complaints can refer to multiple standards, and particular standards can be upheld or not upheld.\nNumbers are total counts of standards.") +
+  guides(fill=FALSE)
+```
+
+![](figs/upheld-by-standard-2.png)
+
+``` r
+top_prog <- bsa_full |> 
+  group_by(programme, genre) |> 
+  tally() |> 
+  ungroup() |> 
+  arrange(desc(n)) |> 
+  slice_head(n = 20)
+
+# Normalise to average viewership - values are a rough guide from Google
+
+top_prog <- top_prog |> 
+  mutate(
+    viewership = case_when(programme == "1 News" ~ "751000",
+                           programme == "Newshub" ~ "241000",
+                           programme == "Morning Report" ~ "434000",
+                           programme == "The AM Show" ~ "64000",
+                           programme == "The Project" ~ "181000",
+                           programme == "Breakfast" ~ "118000",
+                           programme == "Seven Sharp" ~ "546000",
+                           programme == "Shortland Street" ~ "344000")
+  )
+
+ggplot(top_prog, aes(x = fct_reorder(programme, n), y = n, fill = genre)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = get_pal("Kaka")) +
+  theme_classic() +
+  xlab("") +
+  ylab("")
+```
+
+![](figs/top-programmes-1.png)
+
+``` r
+top_prog$viewership <- as.numeric(top_prog$viewership)
+
+viewers <- top_prog |> 
+  filter(!is.na(viewership)) |> 
+  mutate(
+    pc = n / viewership) |> 
+  arrange(desc(pc))
+
+ggplot(viewers, aes(x = fct_reorder(programme, pc), y = pc)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  xlab("") +
+  ylab("") +
+  scale_y_continuous(labels = percent)
+```
+
+![](figs/unnamed-chunk-17-1.png)
