@@ -116,6 +116,8 @@ bsa_full <- bsa_full |>
   )
 ```
 
+Merge `code` and `tv_radio`.
+
 ``` r
 # Recode 'code' as 'either 'Television' or 'Radio', move to 'tv_radio' column to align with new codebook, then delete 'code' column.
 
@@ -127,7 +129,11 @@ bsa_full$code <- recode(bsa_full$code,
 bsa_full$tv_radio <- coalesce(bsa_full$code, bsa_full$tv_radio)
 
 bsa_full <- select(bsa_full, -code)
+```
 
+Add missing values.
+
+``` r
 # Remove asterisk and whitespace from columns containing them.
 
 bsa_full <- bsa_full |> 
@@ -251,7 +257,7 @@ bsa_full <- bsa_full |>
 bsa_full[65,17] <- "not_upheld"
 ```
 
-Plots
+Plots.
 
 ``` r
 ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
@@ -314,7 +320,7 @@ ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = fac
   ylab("") +
   theme(plot.caption = element_text(hjust = 0)) +
   labs(title = "Proportion of standards upheld",
-       caption = "Complaints can refer to multiple standards, and particular standards can be upheld or not upheld.\nNumbers are total counts of standards.") +
+       caption = "Complaints can refer to multiple standards, and particular standards can be upheld or not upheld.\nThe total number of times a standard is considered as part of a complaint is shown to the left of the bar.") +
   guides(fill=FALSE)
 ```
 
@@ -328,6 +334,19 @@ top_prog <- bsa_full |>
   arrange(desc(n)) |> 
   slice_head(n = 20)
 
+ggplot(top_prog, aes(x = fct_reorder(programme, n), y = n, fill = genre)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = get_pal("Kaka")) +
+  theme_classic() +
+  xlab("") +
+  ylab("") +
+  labs(title = "Total complaints by programme", fill = "Genre")
+```
+
+![](figs/top-programmes-1.png)
+
+``` r
 # Normalise to average viewership - values are a rough guide from Google
 
 top_prog <- top_prog |> 
@@ -342,18 +361,6 @@ top_prog <- top_prog |>
                            programme == "Shortland Street" ~ "344000")
   )
 
-ggplot(top_prog, aes(x = fct_reorder(programme, n), y = n, fill = genre)) +
-  geom_col() +
-  coord_flip() +
-  scale_fill_manual(values = get_pal("Kaka")) +
-  theme_classic() +
-  xlab("") +
-  ylab("")
-```
-
-![](figs/top-programmes-1.png)
-
-``` r
 top_prog$viewership <- as.numeric(top_prog$viewership)
 
 viewers <- top_prog |> 
@@ -362,13 +369,43 @@ viewers <- top_prog |>
     pc = n / viewership) |> 
   arrange(desc(pc))
 
-ggplot(viewers, aes(x = fct_reorder(programme, pc), y = pc)) +
+ggplot(viewers, aes(x = fct_reorder(programme, pc), y = pc, fill = factor(pc))) +
   geom_col() +
   coord_flip() +
   theme_classic() +
   xlab("") +
   ylab("") +
-  scale_y_continuous(labels = percent)
+  scale_y_continuous(labels = percent) +
+  scale_fill_manual(values = rep("#955F47", 8)) +
+  guides(fill=FALSE) +
+  labs(title = "Total complaints as a proportion of average viewership")
 ```
 
-![](figs/unnamed-chunk-17-1.png)
+![](figs/complaints-by-viewership-1.png)
+
+``` r
+# Filter to top 9
+
+top6 <- bsa_full |> 
+  group_by(broadcaster) |> 
+  tally() |> 
+  arrange(desc(n)) |> 
+  slice_head(n = 6)
+
+broadcast <- bsa_full |> 
+  filter(broadcaster %in% top6$broadcaster) |> 
+  group_by(broadcaster,complaint_year) |> 
+  tally() |> 
+  arrange(complaint_year)
+
+broadcast$complaint_year <- as.numeric(broadcast$complaint_year)
+
+ggplot(broadcast, aes(x = complaint_year, y = n, colour = broadcaster)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Complaints over time by major broadcaster", colour = "Broadcaster") +
+  xlab("") +
+  ylab("")
+```
+
+![](figs/complaints-by-broadcaster-1.png)
