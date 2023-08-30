@@ -20,9 +20,14 @@ library(scales)
 library(forcats)
 ```
 
-Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
+Download and read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
 
 ```{r}
+download.file("https://auckland.figshare.com/ndownloader/articles/24037866/versions/1",
+              "data/AllClosedFormalComplaints.zip", mode = "wb")
+
+unzip(zipfile = "data/AllClosedFormalComplaints.zip", exdir = "data/", overwrite = TRUE)
+
 bsa_prev <- read_excel("data/20230810 AllClosedFormalComplaints.xlsx")
 bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
 ```
