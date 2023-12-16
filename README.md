@@ -15,11 +15,10 @@ The BSA is an independent Crown entity not subject to the NZGOAL framework, but 
 R code is embedded within executable chunks in `bsa.qmd`, a [Quarto](https://quarto.org/) Markdown document. Quarto is an open-source scientific and technical publishing system built on Pandoc. To run analyses and generate figures:
 
 1. Clone this repository.*
-2. [Download](https://doi.org/10.17608/k6.auckland.24037866) and extract the data to the `/data` folder.
 2. Open `bsa.qmd` in RStudio and 'Run all' (`ctrl`+`alt`+`R`).
 
 *see [here](https://happygitwithr.com/) for instructions for setting up Git/GitHub with RStudio.
 
 ## Licence
 
-All code in this repository is licensed under the [MIT license](https://github.com/tesaunders/bsa/blob/main/LICENSE).
+All code in this repository is licensed under the [MIT license](LICENSE).

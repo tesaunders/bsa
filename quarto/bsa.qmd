@@ -4,7 +4,7 @@ author: "Tom Saunders"
 format: gfm
 knitr:
   opts_chunk:
-    fig.path: figs/
+    fig.path: ../figs/
 ---
 
 ```{r}
@@ -25,8 +25,8 @@ library(Manu)
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
 
 ```{r}
-bsa_prev <- read_excel("data/20230810 AllClosedFormalComplaints.xlsx")
-bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
+bsa_prev <- read_excel("../data/20230810 AllClosedFormalComplaints.xlsx")
+bsa_curr <- read_excel("../data/20230807 AllClosedFormalComplaints.xlsx")
 ```
 
 Convert `Broadcast Date/Time` to date in each dataset. I can't find a way to preserve times.
