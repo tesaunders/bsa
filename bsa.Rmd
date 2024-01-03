@@ -1,9 +1,10 @@
 ---
-title: "BSA"
-author: "Tom Saunders"
+title: ""
+author: ""
 output: html_document
-knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), '/docs/bsa.html')) })
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), '/docs/index.html')) })
 ---
+# Analyses of Broadcasting Standards Authority data (2016-2022)
 
 ```{r, message=FALSE}
 library(readxl)
@@ -18,31 +19,31 @@ library(forcats)
 library(Manu)
 ```
 
-Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
-
 ```{r}
+# Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present)
+
 bsa_prev <- read_excel("data/20230810 AllClosedFormalComplaints.xlsx")
 bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
 ```
 
-Convert `Broadcast Date/Time` to date in each dataset. I can't find a way to preserve times.
-
 ```{r, warning=FALSE}
+# Convert `Broadcast Date/Time` to date in each dataset
+
 bsa_prev$`Broadcast Date/Time` <- as.numeric(bsa_prev$`Broadcast Date/Time`)
 bsa_prev$`Broadcast Date/Time` <- as.Date(bsa_prev$`Broadcast Date/Time`, origin = "1899-12-30")
 
 bsa_curr$`Broadcast Date/Time` <- as.Date(bsa_curr$`Broadcast Date/Time`, origin = "1899-12-30")
 ```
 
-Join the two datasets.
-
 ```{r, message=FALSE}
+# Join the two datasets
+
 bsa_full <- full_join(bsa_prev, bsa_curr)
 ```
 
-Rename columns.
-
 ```{r}
+# Rename columns
+
 colnames(bsa_full) <- c("broadcaster", "complaint", "programme", "broadcast_date", "genre",
                         "code", "determination", "decision_date", "majority", "split", 
                         "elect_standards", "elect_notupheld", "elect_upheld", 
@@ -51,9 +52,8 @@ colnames(bsa_full) <- c("broadcaster", "complaint", "programme", "broadcast_date
                         "radio_upheld", "standards", "not_upheld", "upheld", "tv_radio")
 ```
 
-Consolidate individual standards based on previous codebook into 'standards' column introduced for new codebook. Repeat for 'upheld' and 'not upheld' standards. Drop these columns once they are consolidated.
-
 ```{r}
+# Consolidate individual standards based on previous codebook into 'standards' column introduced for new codebook. Repeat for 'upheld' and 'not upheld' standards. Drop these columns once they are consolidated.
 
 bsa_full$standards <- coalesce(bsa_full$elect_standards, bsa_full$fta_standards, bsa_full$paytv_standards, bsa_full$radio_standards, bsa_full$standards)
   
@@ -64,14 +64,13 @@ bsa_full$upheld <- coalesce(bsa_full$elect_upheld, bsa_full$fta_upheld, bsa_full
 bsa_full <- select(bsa_full, -c(11:22))
 ```
 
-Fix factors.
-
 ```{r}
-# Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
+# Fix factors.
+## Recode 'broadcaster' "Newstalk ZB" as the actual Broadcaster
 
 bsa_full$broadcaster <- recode(bsa_full$broadcaster, "Newstalk ZB" = "NZME Radio Ltd")
 
-# Recode 'complaint' numbers as what they have been renumbered to
+## Recode 'complaint' numbers as what they have been renumbered to
 
 bsa_full$complaint <- recode(bsa_full$complaint, 
                              "2016-053 (renumbered 048B)" = "2016-048B",
@@ -79,7 +78,7 @@ bsa_full$complaint <- recode(bsa_full$complaint,
                              "2017-028 (renumbered 018C)" = "2017-018C",
                              "2017-029 (renumbered 018D)" = "2017-018D")
 
-# Recode programme to remove duplicates with minor spelling variations and date variations
+## Recode programme to remove duplicates with minor spelling variations and date variations
 
 bsa_full <- bsa_full |>
   mutate(
@@ -115,10 +114,8 @@ bsa_full <- bsa_full |>
   )
 ```
 
-Merge `code` and `tv_radio`.
-
 ```{r}
-# Recode 'code' as 'either 'Television' or 'Radio', move to 'tv_radio' column to align with new codebook, then delete 'code' column.
+# Recode 'code' as either 'Television' or 'Radio', move to 'tv_radio' column to align with new codebook, then delete 'code' column.
 
 bsa_full$code <- recode(bsa_full$code, 
                              "Free to Air TV" = "Television",
@@ -129,8 +126,6 @@ bsa_full$tv_radio <- coalesce(bsa_full$code, bsa_full$tv_radio)
 
 bsa_full <- select(bsa_full, -code)
 ```
-
-Add missing values.
 
 ```{r}
 # Remove asterisk and whitespace from columns containing them.
@@ -145,7 +140,9 @@ bsa_full <- bsa_full |>
 bsa_full$standards <- str_trim(bsa_full$standards, "left")
 bsa_full$upheld <- str_trim(bsa_full$upheld, "left")
 bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
+```
 
+```{r}
 # Fix missing values in standards/upheld/not_upheld columns
 ## Find rows where standards are missing from both 'upheld' and 'not_upheld" columns.
 
@@ -198,22 +195,22 @@ bsa_full <- bsa_full |>
   bind_rows(missing2)
 ```
 
-Create new variable 'complaint_year' based on first 4 characters of 'complaint'.
-
 ```{r}
+# Create new variable 'complaint_year' based on first 4 characters of 'complaint'.
+
 bsa_full$complaint_year <- substr(bsa_full$complaint, 1, 4)
 ```
 
-Reorder columns.
-
 ```{r}
+# Reorder columns.
+
 bsa_full <- bsa_full[, c(1,3,5,4,2,14,13,6,7:12)]
 ```
 
-Swap standards to column names and not_upheld/upheld to values for each complaint.
 
-```{r}
-#| warning: false
+
+```{r, warning=FALSE}
+# Swap standards to column names and not_upheld/upheld to values for each complaint.
 
 bsa_full <- bsa_full |>
   pivot_longer(cols = c(upheld, not_upheld), values_drop_na = TRUE) |> 
@@ -221,9 +218,9 @@ bsa_full <- bsa_full |>
   pivot_wider(names_from = value, values_from = name)
 ```
 
-Rename standard columns.
-
 ```{r}
+# Rename standard columns.
+
 bsa_full <- bsa_full |> 
   rename(
     std_privacy = 13,
@@ -246,17 +243,15 @@ bsa_full <- bsa_full |>
   )
 ```
 
-Remove NULL values.
-
 ```{r}
+# Remove NULL values.
+
 bsa_full <- bsa_full |>
   mutate(across(13:29, as.character))
 
 # Fix instance of both values being added 
 bsa_full[65,17] <- "not_upheld"
 ```
-
-Plots.
 
 ```{r, determination-over-time}
 ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
@@ -269,7 +264,7 @@ ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
   scale_y_continuous(labels = scales::percent)
 ```
 
-```{r, upheld-by-standard}
+```{r, upheld-by-standard, warning=FALSE}
 summary2 <- bsa_full |>
   select(13:29) |>
   pivot_longer(cols = everything()) |> 
@@ -281,20 +276,6 @@ summary2 <- bsa_full |>
     total = sum(upheld, na.rm = TRUE) + sum(not_upheld, na.rm = TRUE),
     upheld_pc = sum(upheld, na.rm = TRUE) / total,
   ) 
-
-ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = factor(upheld_pc))) +
-  geom_col() +
-  coord_flip() +
-  theme_classic() +
-  scale_fill_manual(values = rep("#A7473A", 15)) +
-  scale_y_continuous(labels = scales::percent) +
-  xlab("") +
-  ylab("") +
-  labs(title = "Proportion of standards upheld",
-       caption = "Complaints can refer to multiple standards, and particular standards can be upheld or not upheld.") +
-  guides(fill=FALSE) +
-  geom_text(aes(label = total), position = position_dodge(0))
-
 
 ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = factor(upheld_pc))) +
   geom_col() +
