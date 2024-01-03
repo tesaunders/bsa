@@ -1,15 +1,11 @@
 ---
 title: "BSA"
 author: "Tom Saunders"
-format: gfm
-knitr:
-  opts_chunk:
-    fig.path: ../figs/
+output: html_document
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), '/docs/bsa.html')) })
 ---
 
-```{r}
-#| message: false
-
+```{r, message=FALSE}
 library(readxl)
 library(lubridate)
 library(readr)
@@ -25,15 +21,13 @@ library(Manu)
 Read in two datasets: the first is for complaints made under the previous BSA Codebook (1 April 2016 to 30 June 2022); the second is for complaints made under the current Codebook (1 July 2022 to present).
 
 ```{r}
-bsa_prev <- read_excel("../data/20230810 AllClosedFormalComplaints.xlsx")
-bsa_curr <- read_excel("../data/20230807 AllClosedFormalComplaints.xlsx")
+bsa_prev <- read_excel("data/20230810 AllClosedFormalComplaints.xlsx")
+bsa_curr <- read_excel("data/20230807 AllClosedFormalComplaints.xlsx")
 ```
 
 Convert `Broadcast Date/Time` to date in each dataset. I can't find a way to preserve times.
 
-```{r}
-#| warning: false
-
+```{r, warning=FALSE}
 bsa_prev$`Broadcast Date/Time` <- as.numeric(bsa_prev$`Broadcast Date/Time`)
 bsa_prev$`Broadcast Date/Time` <- as.Date(bsa_prev$`Broadcast Date/Time`, origin = "1899-12-30")
 
@@ -42,9 +36,7 @@ bsa_curr$`Broadcast Date/Time` <- as.Date(bsa_curr$`Broadcast Date/Time`, origin
 
 Join the two datasets.
 
-```{r}
-#| message: false
-
+```{r, message=FALSE}
 bsa_full <- full_join(bsa_prev, bsa_curr)
 ```
 
@@ -160,7 +152,7 @@ bsa_full$not_upheld <- str_trim(bsa_full$not_upheld, "left")
 missing <- bsa_full |> 
   filter(is.na(upheld) & is.na(not_upheld))
 
-## Add missing values based on manual BSA decision database lookup
+## Add missing values based on manual lookup of BSA decision database.
 
 missing[1,10] <- "Discrimination and Denigration"
 missing[4, 10] <- "Accuracy" # Complaint 2018-020 
@@ -266,9 +258,7 @@ bsa_full[65,17] <- "not_upheld"
 
 Plots.
 
-```{r}
-#| label: determination-over-time
-
+```{r, determination-over-time}
 ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
   geom_bar(position = "fill", colour = "black") +
   theme_classic() +
@@ -279,9 +269,7 @@ ggplot(bsa_full, aes(x = complaint_year, fill = determination)) +
   scale_y_continuous(labels = scales::percent)
 ```
 
-```{r}
-#| label: upheld-by-standard
-
+```{r, upheld-by-standard}
 summary2 <- bsa_full |>
   select(13:29) |>
   pivot_longer(cols = everything()) |> 
@@ -327,9 +315,7 @@ ggplot(summary2, aes(x = fct_reorder(name, upheld_pc), y = upheld_pc, fill = fac
   guides(fill=FALSE)
 ```
 
-```{r}
-#| label: top-programmes
-
+```{r, top-programmes}
 top_prog <- bsa_full |> 
   group_by(programme, genre) |> 
   tally() |> 
@@ -347,9 +333,7 @@ ggplot(top_prog, aes(x = fct_reorder(programme, n), y = n, fill = genre)) +
   labs(title = "Total complaints by programme", fill = "Genre")
 ```
 
-```{r}
-#| label: complaints-by-viewership
-
+```{r, complaints-by-viewership}
 # Normalise to average viewership - values are a rough guide from Google
 
 top_prog <- top_prog |> 
@@ -384,9 +368,7 @@ ggplot(viewers, aes(x = fct_reorder(programme, pc), y = pc, fill = factor(pc))) 
   labs(title = "Total complaints as a proportion of average viewership")
 ```
 
-```{r}
-#| label: complaints-by-broadcaster
-
+```{r, complaints-by-broadcaster}
 # Filter to top 9
 
 top6 <- bsa_full |> 
